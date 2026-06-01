@@ -156,9 +156,9 @@ function CompareModal({ supplierId, onClose }: { supplierId: string; onClose: ()
                       <p className="text-slate-200 text-sm line-clamp-1">{p.title}</p>
                       <p className="text-slate-500 text-xs">{p.category}</p>
                     </td>
-                    <td className="py-3 text-right text-slate-300">{formatCurrency((p as Record<string, unknown>)['supplier_price'] as number)}</td>
-                    <td className="py-3 text-right text-slate-300">{formatCurrency((p as Record<string, unknown>)['shipping_cost'] as number)}</td>
-                    <td className="py-3 text-center text-slate-400">{(p as Record<string, unknown>)['moq'] as number}</td>
+                    <td className="py-3 text-right text-slate-300">{formatCurrency((p as unknown as Record<string, unknown>)['supplier_price'] as number)}</td>
+                    <td className="py-3 text-right text-slate-300">{formatCurrency((p as unknown as Record<string, unknown>)['shipping_cost'] as number)}</td>
+                    <td className="py-3 text-center text-slate-400">{(p as unknown as Record<string, unknown>)['moq'] as number}</td>
                   </tr>
                 ))}
               </tbody>
