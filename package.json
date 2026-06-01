@@ -1,0 +1,15 @@
+{
+  "name": "dropintel",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "packages/api",
+    "packages/dashboard"
+  ],
+  "scripts": {
+    "dev:api": "cd packages/api && npm run dev",
+    "dev:dashboard": "cd packages/dashboard && npm run dev",
+    "build:api": "cd packages/api && npm run build",
+    "build:dashboard": "cd packages/dashboard && npm run build"
+  }
+}

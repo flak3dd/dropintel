@@ -1,0 +1,44 @@
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-dropintel}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dropintel}
+      POSTGRES_DB: ${POSTGRES_DB:-dropintel}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./packages/db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./packages/db/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-dropintel}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: ./packages/api
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://dropintel:dropintel@db:5432/dropintel
+    ports:
+      - "3002:3002"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  dashboard:
+    build:
+      context: ./packages/dashboard
+    env_file: .env
+    environment:
+      NEXT_PUBLIC_API_URL: http://api:3002
+    ports:
+      - "3001:3001"
+    depends_on:
+      - api
+
+volumes:
+  postgres-data:
