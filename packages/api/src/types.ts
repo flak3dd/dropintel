@@ -26,7 +26,68 @@ export interface Supplier {
   categories: string[];
   url: string | null;
   verified: boolean;
+  contact_email: string | null;
+  contact_whatsapp: string | null;
+  contact_wechat: string | null;
+  contact_notes: string | null;
+  last_contacted: string | null;
   created_at: string;
+}
+
+export interface SupplierThread {
+  id: string;
+  supplier_id: string;
+  product_id: string | null;
+  subject: string;
+  status: string;
+  last_message_at: string;
+  created_at: string;
+}
+
+export interface SupplierMessage {
+  id: string;
+  thread_id: string;
+  direction: 'outbound' | 'inbound';
+  body: string;
+  sender_name: string | null;
+  read: boolean;
+  sent_via: string;
+  created_at: string;
+}
+
+export interface PurchaseOrder {
+  id: string;
+  po_number: string;
+  supplier_id: string;
+  thread_id: string | null;
+  status: string;
+  currency: string;
+  subtotal: number;
+  shipping_total: number;
+  total: number;
+  shipping_address: Record<string, unknown>;
+  notes: string | null;
+  expected_ship_date: string | null;
+  tracking_number: string | null;
+  tracking_url: string | null;
+  confirmed_at: string | null;
+  shipped_at: string | null;
+  delivered_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PurchaseOrderItem {
+  id: string;
+  po_id: string;
+  product_id: string;
+  product_title: string;
+  sku: string | null;
+  quantity: number;
+  unit_price: number;
+  shipping_cost: number;
+  total: number;
+  notes: string | null;
 }
 
 export interface ProductPrice {

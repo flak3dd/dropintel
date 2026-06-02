@@ -149,6 +149,119 @@ export async function deleteReport(id: string) {
   return apiFetch<void>(`/api/reports/${id}`, { method: 'DELETE' });
 }
 
+// ── Messaging ──────────────────────────────────────────────────────────────
+
+export async function getThreads() {
+  return apiFetch<SupplierThread[]>('/api/threads');
+}
+
+export async function getThread(id: string) {
+  return apiFetch<{ thread: SupplierThread; messages: SupplierMessage[] }>(`/api/threads/${id}`);
+}
+
+export async function getSupplierThreads(supplierId: string) {
+  return apiFetch<SupplierThread[]>(`/api/suppliers/${supplierId}/threads`);
+}
+
+export async function createThread(data: {
+  supplier_id: string;
+  product_id?: string;
+  subject: string;
+  body: string;
+  sent_via?: string;
+}) {
+  return apiFetch<SupplierThread>('/api/threads', { method: 'POST', body: JSON.stringify(data) });
+}
+
+export async function replyToThread(id: string, body: string, direction: 'outbound' | 'inbound', sent_via?: string) {
+  return apiFetch<SupplierMessage>(`/api/threads/${id}/reply`, {
+    method: 'POST',
+    body: JSON.stringify({ body, direction, sent_via }),
+  });
+}
+
+export async function updateThreadStatus(id: string, status: string) {
+  return apiFetch<SupplierThread>(`/api/threads/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status }),
+  });
+}
+
+export async function deleteThread(id: string) {
+  return apiFetch<void>(`/api/threads/${id}`, { method: 'DELETE' });
+}
+
+export async function sendThreadEmail(id: string, body: string) {
+  return apiFetch<{ sent: boolean; mailto?: string }>(`/api/threads/${id}/send-email`, {
+    method: 'POST',
+    body: JSON.stringify({ body }),
+  });
+}
+
+// ── Orders ──────────────────────────────────────────────────────────────────
+
+export async function getOrders() {
+  return apiFetch<(PurchaseOrder & { supplier_name: string; item_count: number })[]>('/api/orders');
+}
+
+export async function getOrder(id: string) {
+  return apiFetch<PurchaseOrder & { supplier_name: string; items: PurchaseOrderItem[] }>(`/api/orders/${id}`);
+}
+
+export async function createOrder(data: {
+  supplier_id: string;
+  items: Array<{
+    product_id: string;
+    product_title: string;
+    sku?: string;
+    quantity: number;
+    unit_price: number;
+    shipping_cost?: number;
+  }>;
+  notes?: string;
+  shipping_address?: Record<string, string>;
+  thread_id?: string;
+}) {
+  return apiFetch<PurchaseOrder>('/api/orders', { method: 'POST', body: JSON.stringify(data) });
+}
+
+export async function updateOrder(id: string, data: {
+  status?: string;
+  tracking_number?: string;
+  tracking_url?: string;
+  notes?: string;
+  expected_ship_date?: string;
+}) {
+  return apiFetch<PurchaseOrder>(`/api/orders/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
+}
+
+export async function deleteOrder(id: string) {
+  return apiFetch<void>(`/api/orders/${id}`, { method: 'DELETE' });
+}
+
+export async function sendOrder(id: string) {
+  return apiFetch<PurchaseOrder>(`/api/orders/${id}/send`, { method: 'POST' });
+}
+
+export async function confirmOrder(id: string) {
+  return apiFetch<PurchaseOrder>(`/api/orders/${id}/confirm`, { method: 'POST' });
+}
+
+export async function addOrderItem(poId: string, item: {
+  product_id: string;
+  product_title: string;
+  sku?: string;
+  quantity: number;
+  unit_price: number;
+  shipping_cost?: number;
+}) {
+  return apiFetch<PurchaseOrderItem>(`/api/orders/${poId}/items`, { method: 'POST', body: JSON.stringify(item) });
+}
+
+export async function removeOrderItem(poId: string, itemId: string) {
+  return apiFetch<void>(`/api/orders/${poId}/items/${itemId}`, { method: 'DELETE' });
+}
+
 // Types
 export interface Product {
   id: string;
@@ -192,7 +305,81 @@ export interface Supplier {
   categories: string[];
   url: string | null;
   verified: boolean;
+  contact_email: string | null;
+  contact_whatsapp: string | null;
+  contact_wechat: string | null;
+  contact_notes: string | null;
+  last_contacted: string | null;
   created_at: string;
+}
+
+export interface SupplierThread {
+  id: string;
+  supplier_id: string;
+  product_id: string | null;
+  subject: string;
+  status: string;
+  last_message_at: string;
+  created_at: string;
+  // joined fields
+  supplier_name?: string;
+  contact_email?: string;
+  contact_whatsapp?: string;
+  product_title?: string | null;
+  last_message_preview?: string | null;
+  unread_count?: number;
+}
+
+export interface SupplierMessage {
+  id: string;
+  thread_id: string;
+  direction: 'outbound' | 'inbound';
+  body: string;
+  sender_name: string | null;
+  read: boolean;
+  sent_via: string;
+  created_at: string;
+}
+
+export interface PurchaseOrder {
+  id: string;
+  po_number: string;
+  supplier_id: string;
+  thread_id: string | null;
+  status: string;
+  currency: string;
+  subtotal: number;
+  shipping_total: number;
+  total: number;
+  shipping_address: Record<string, string>;
+  notes: string | null;
+  expected_ship_date: string | null;
+  tracking_number: string | null;
+  tracking_url: string | null;
+  confirmed_at: string | null;
+  shipped_at: string | null;
+  delivered_at: string | null;
+  created_at: string;
+  updated_at: string;
+  // joined
+  supplier_name?: string;
+  contact_email?: string;
+  contact_whatsapp?: string;
+  item_count?: number;
+  items?: PurchaseOrderItem[];
+}
+
+export interface PurchaseOrderItem {
+  id: string;
+  po_id: string;
+  product_id: string;
+  product_title: string;
+  sku: string | null;
+  quantity: number;
+  unit_price: number;
+  shipping_cost: number;
+  total: number;
+  notes: string | null;
 }
 
 export interface SupplierPrice {

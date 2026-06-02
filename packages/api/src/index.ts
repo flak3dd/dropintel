@@ -14,6 +14,8 @@ import { watchlistRoutes } from './routes/watchlist.js';
 import { reportsRoutes } from './routes/reports.js';
 import { dashboardRoutes } from './routes/dashboard.js';
 import { shopifyRoutes } from './routes/shopify.js';
+import { messagingRoutes } from './routes/messaging.js';
+import { ordersRoutes } from './routes/orders.js';
 
 const fastify = Fastify({ logger: true });
 
@@ -36,6 +38,8 @@ await fastify.register(watchlistRoutes);
 await fastify.register(reportsRoutes);
 await fastify.register(dashboardRoutes);
 await fastify.register(shopifyRoutes);
+await fastify.register(messagingRoutes);
+await fastify.register(ordersRoutes);
 
 // Health check
 fastify.get('/health', async () => ({ status: 'ok', service: 'dropintel-api' }));

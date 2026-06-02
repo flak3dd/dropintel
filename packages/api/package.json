@@ -12,8 +12,10 @@
     "@fastify/cors": "^9.0.1",
     "@google/generative-ai": "^0.21.0",
     "@shopify/shopify-api": "^13.0.0",
+    "@types/nodemailer": "^8.0.0",
     "dotenv": "^16.4.5",
     "fastify": "^5.2.1",
+    "nodemailer": "^8.0.10",
     "pg": "^8.13.1"
   },
   "devDependencies": {

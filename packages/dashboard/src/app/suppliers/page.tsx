@@ -1,17 +1,23 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { getSuppliers, compareSuppliers, type Supplier, type SupplierPrice } from '@/lib/api';
+import { getSuppliers, compareSuppliers, getSupplierThreads, createThread, createOrder, getProducts, type Supplier, type SupplierPrice, type SupplierThread, type ProductWithMarket } from '@/lib/api';
 import { formatCurrency, platformLabel } from '@/lib/utils';
 import { LoadingSkeleton } from '@/components/LoadingSkeleton';
-import { Star, MapPin, Clock, CheckCircle, X } from 'lucide-react';
+import { MessageThread } from '@/components/MessageThread';
+import { Star, MapPin, Clock, CheckCircle, X, MessageSquare, Package } from 'lucide-react';
 
 export default function SuppliersPage() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(true);
   const [compareModal, setCompareModal] = useState<string | null>(null);
+  const [composeSupplier, setComposeSupplier] = useState<Supplier | null>(null);
+  const [orderSupplier, setOrderSupplier] = useState<Supplier | null>(null);
+  const [composeThread, setComposeThread] = useState<string | null>(null);
+  const [products, setProducts] = useState<ProductWithMarket[]>([]);
 
   useEffect(() => {
     getSuppliers().then(setSuppliers).catch(console.error).finally(() => setLoading(false));
+    getProducts().then(setProducts).catch(console.error);
   }, []);
 
   return (
@@ -30,13 +36,50 @@ export default function SuppliersPage() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {suppliers.map((s) => (
-            <SupplierCard key={s.id} supplier={s} onCompare={() => setCompareModal(s.id)} />
+            <SupplierCard
+              key={s.id}
+              supplier={s}
+              onCompare={() => setCompareModal(s.id)}
+              onMessage={() => setComposeSupplier(s)}
+              onOrder={() => setOrderSupplier(s)}
+            />
           ))}
         </div>
       )}
 
       {compareModal && (
         <CompareModal supplierId={compareModal} onClose={() => setCompareModal(null)} />
+      )}
+
+      {/* Compose message modal */}
+      {composeSupplier && !composeThread && (
+        <QuickComposeModal
+          supplier={composeSupplier}
+          onClose={() => setComposeSupplier(null)}
+          onCreated={(threadId) => {
+            setComposeSupplier(null);
+            setComposeThread(threadId);
+          }}
+        />
+      )}
+
+      {/* Open the thread after composing */}
+      {composeThread && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-2xl h-[80vh] overflow-hidden flex flex-col">
+            <MessageThread threadId={composeThread} onClose={() => setComposeThread(null)} />
+          </div>
+        </div>
+      )}
+
+      {/* Quick order modal */}
+      {orderSupplier && (
+        <QuickOrderModal
+          supplier={orderSupplier}
+          products={products}
+          onClose={() => setOrderSupplier(null)}
+          onCreated={() => setOrderSupplier(null)}
+        />
       )}
     </div>
   );
@@ -49,7 +92,7 @@ const PLATFORM_COLORS: Record<string, string> = {
   dsers: 'bg-green-500/15 text-green-300 border-green-500/30',
 };
 
-function SupplierCard({ supplier, onCompare }: { supplier: Supplier; onCompare: () => void }) {
+function SupplierCard({ supplier, onCompare, onMessage, onOrder }: { supplier: Supplier; onCompare: () => void; onMessage: () => void; onOrder: () => void }) {
   const stars = Math.round(supplier.rating ?? 0);
 
   return (
@@ -111,6 +154,23 @@ function SupplierCard({ supplier, onCompare }: { supplier: Supplier; onCompare: 
       >
         View Products & Prices
       </button>
+
+      <div className="flex gap-2 mt-2">
+        <button
+          onClick={onMessage}
+          className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium rounded-lg border border-slate-700 transition-colors"
+        >
+          <MessageSquare size={12} />
+          Message
+        </button>
+        <button
+          onClick={onOrder}
+          className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium rounded-lg border border-slate-700 transition-colors"
+        >
+          <Package size={12} />
+          Create Order
+        </button>
+      </div>
     </div>
   );
 }
@@ -164,6 +224,183 @@ function CompareModal({ supplierId, onClose }: { supplierId: string; onClose: ()
               </tbody>
             </table>
           )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Quick Compose Modal ──────────────────────────────────────────────────────
+
+function QuickComposeModal({
+  supplier,
+  onClose,
+  onCreated,
+}: {
+  supplier: Supplier;
+  onClose: () => void;
+  onCreated: (threadId: string) => void;
+}) {
+  const [subject, setSubject] = useState('');
+  const [body, setBody] = useState('');
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState('');
+
+  async function handleSubmit() {
+    if (!subject.trim() || !body.trim()) { setError('Subject and message are required.'); return; }
+    setSending(true);
+    try {
+      const thread = await createThread({ supplier_id: supplier.id, subject: subject.trim(), body: body.trim() });
+      onCreated(thread.id);
+    } catch {
+      setError('Failed to send message.');
+    } finally {
+      setSending(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+      <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg">
+        <div className="flex items-center justify-between p-5 border-b border-slate-800">
+          <div>
+            <h2 className="text-slate-100 font-semibold">Message {supplier.name}</h2>
+            {supplier.contact_email && <p className="text-slate-500 text-xs mt-0.5">{supplier.contact_email}</p>}
+          </div>
+          <button onClick={onClose} className="text-slate-500 hover:text-slate-300"><X size={18} /></button>
+        </div>
+        <div className="p-5 space-y-4">
+          {error && <p className="text-red-400 text-sm">{error}</p>}
+          <div>
+            <label className="text-slate-400 text-xs font-medium block mb-1">Subject</label>
+            <input
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+              placeholder="e.g. Inquiry about pricing and MOQ"
+              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500"
+            />
+          </div>
+          <div>
+            <label className="text-slate-400 text-xs font-medium block mb-1">Message</label>
+            <textarea
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+              rows={5}
+              placeholder="Write your message..."
+              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-600 resize-none focus:outline-none focus:border-indigo-500"
+            />
+          </div>
+        </div>
+        <div className="flex justify-end gap-3 px-5 pb-5">
+          <button onClick={onClose} className="px-4 py-2 text-slate-400 hover:text-slate-200 text-sm">Cancel</button>
+          <button
+            onClick={handleSubmit}
+            disabled={sending}
+            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white text-sm font-medium rounded-lg transition-colors"
+          >
+            {sending ? 'Sending...' : 'Send Message'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Quick Order Modal ─────────────────────────────────────────────────────────
+
+function QuickOrderModal({
+  supplier,
+  products,
+  onClose,
+  onCreated,
+}: {
+  supplier: Supplier;
+  products: ProductWithMarket[];
+  onClose: () => void;
+  onCreated: () => void;
+}) {
+  const [productId, setProductId] = useState('');
+  const [qty, setQty] = useState(1);
+  const [price, setPrice] = useState(0);
+  const [shipping, setShipping] = useState(0);
+  const [notes, setNotes] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+
+  async function handleSubmit() {
+    const product = products.find((p) => p.id === productId);
+    if (!product || qty < 1 || price <= 0) { setError('Select a product, set quantity and price.'); return; }
+    setSubmitting(true);
+    try {
+      await createOrder({
+        supplier_id: supplier.id,
+        items: [{ product_id: product.id, product_title: product.title, quantity: qty, unit_price: price, shipping_cost: shipping }],
+        notes,
+      });
+      onCreated();
+    } catch {
+      setError('Failed to create order.');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+      <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg">
+        <div className="flex items-center justify-between p-5 border-b border-slate-800">
+          <h2 className="text-slate-100 font-semibold">New Order — {supplier.name}</h2>
+          <button onClick={onClose} className="text-slate-500 hover:text-slate-300"><X size={18} /></button>
+        </div>
+        <div className="p-5 space-y-4">
+          {error && <p className="text-red-400 text-sm">{error}</p>}
+          <div>
+            <label className="text-slate-400 text-xs font-medium block mb-1">Product</label>
+            <select
+              value={productId}
+              onChange={(e) => {
+                setProductId(e.target.value);
+                const p = products.find((x) => x.id === e.target.value);
+                if (p?.supplier_price) setPrice(p.supplier_price);
+                if (p?.shipping_cost) setShipping(p.shipping_cost);
+              }}
+              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500"
+            >
+              <option value="">Select product...</option>
+              {products.map((p) => (
+                <option key={p.id} value={p.id}>{p.title}</option>
+              ))}
+            </select>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className="text-slate-400 text-xs font-medium block mb-1">Qty</label>
+              <input type="number" min={1} value={qty} onChange={(e) => setQty(parseInt(e.target.value) || 1)}
+                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500" />
+            </div>
+            <div>
+              <label className="text-slate-400 text-xs font-medium block mb-1">Unit Price (A$)</label>
+              <input type="number" step="0.01" value={price} onChange={(e) => setPrice(parseFloat(e.target.value) || 0)}
+                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500" />
+            </div>
+            <div>
+              <label className="text-slate-400 text-xs font-medium block mb-1">Shipping (A$)</label>
+              <input type="number" step="0.01" value={shipping} onChange={(e) => setShipping(parseFloat(e.target.value) || 0)}
+                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500" />
+            </div>
+          </div>
+          <div>
+            <label className="text-slate-400 text-xs font-medium block mb-1">Notes (optional)</label>
+            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2}
+              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-600 resize-none focus:outline-none focus:border-indigo-500" />
+          </div>
+        </div>
+        <div className="flex justify-end gap-3 px-5 pb-5">
+          <button onClick={onClose} className="px-4 py-2 text-slate-400 hover:text-slate-200 text-sm">Cancel</button>
+          <button onClick={handleSubmit} disabled={submitting}
+            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white text-sm font-medium rounded-lg transition-colors">
+            {submitting ? 'Creating...' : 'Create Draft Order'}
+          </button>
         </div>
       </div>
     </div>
