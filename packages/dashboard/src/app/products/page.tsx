@@ -10,6 +10,7 @@ import { TrendBadge } from '@/components/TrendBadge';
 import { SparkLine } from '@/components/SparkLine';
 import { LoadingSkeleton } from '@/components/LoadingSkeleton';
 import { Search, X, ChevronDown } from 'lucide-react';
+import { ShopifyLaunchButton } from '@/components/ShopifyLaunchButton';
 
 const CATEGORIES = ['Electronics', 'Home & Garden', 'Pet Supplies', 'Fitness', 'Beauty'];
 const SOURCES = ['aliexpress', 'cjdropshipping', 'amazon', 'etsy'];
@@ -94,6 +95,7 @@ export default function ProductDiscovery() {
                 <th className="text-right px-4 py-3">Net Margin</th>
                 <th className="text-left px-4 py-3">Trend</th>
                 <th className="text-left px-4 py-3">Verdict</th>
+                <th className="text-left px-4 py-3">Shopify</th>
                 <th className="px-4 py-3" />
               </tr>
             </thead>
@@ -121,6 +123,13 @@ export default function ProductDiscovery() {
                     </td>
                     <td className="px-4 py-3"><TrendBadge direction={p.trend_direction} /></td>
                     <td className="px-4 py-3"><VerdictBadge verdict={p.verdict} /></td>
+                    <td className="px-4 py-3">
+                      <ShopifyLaunchButton
+                        productId={p.id}
+                        suggestedPrice={p.market_price ? Number(p.market_price) * 0.9 : undefined}
+                        compact
+                      />
+                    </td>
                     <td className="px-4 py-3">
                       <button
                         onClick={() => setSelected(selected === p.id ? null : p.id)}

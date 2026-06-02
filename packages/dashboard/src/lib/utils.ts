@@ -5,14 +5,18 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatCurrency(val: number | null | undefined): string {
-  if (val == null) return 'N/A';
-  return `$${val.toFixed(2)}`;
+export function formatCurrency(val: number | string | null | undefined): string {
+  if (val == null || val === '') return 'N/A';
+  const n = Number(val);
+  if (isNaN(n)) return 'N/A';
+  return `$${n.toFixed(2)}`;
 }
 
-export function formatPct(val: number | null | undefined): string {
-  if (val == null) return 'N/A';
-  return `${val.toFixed(1)}%`;
+export function formatPct(val: number | string | null | undefined): string {
+  if (val == null || val === '') return 'N/A';
+  const n = Number(val);
+  if (isNaN(n)) return 'N/A';
+  return `${n.toFixed(1)}%`;
 }
 
 export function verdictColor(verdict: string | null | undefined): string {

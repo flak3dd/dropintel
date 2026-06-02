@@ -6,6 +6,7 @@ import { VerdictBadge } from '@/components/VerdictBadge';
 import { TrendBadge } from '@/components/TrendBadge';
 import { CardSkeleton, LoadingSkeleton } from '@/components/LoadingSkeleton';
 import { Package, TrendingUp, Bookmark, BarChart2 } from 'lucide-react';
+import { ShopifyLaunchButton } from '@/components/ShopifyLaunchButton';
 
 interface Metrics {
   total_products: number;
@@ -159,6 +160,12 @@ function OpportunityCard({ product }: { product: ProductWithMarket }) {
       <div className="mt-3 flex items-center justify-between">
         <TrendBadge direction={product.trend_direction} className="text-xs" />
         <span className="text-slate-500 text-xs capitalize">{product.source}</span>
+      </div>
+      <div className="mt-3">
+        <ShopifyLaunchButton
+          productId={product.id}
+          suggestedPrice={product.market_price ? Number(product.market_price) * 0.9 : undefined}
+        />
       </div>
     </div>
   );

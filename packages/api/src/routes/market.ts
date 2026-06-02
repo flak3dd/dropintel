@@ -6,12 +6,12 @@ export async function marketRoutes(fastify: FastifyInstance): Promise<void> {
   // GET /api/market/trending
   fastify.get('/api/market/trending', async (_request, reply) => {
     const rows = await query(
-      `SELECT p.*, md.market_price, md.search_volume, md.trend_direction,
+      `SELECT DISTINCT ON (p.id) p.*, md.market_price, md.search_volume, md.trend_direction,
               md.monthly_sales_estimate, md.competitor_count, md.trend_data
        FROM products p
        JOIN market_data md ON md.product_id = p.id
        WHERE md.trend_direction IN ('rising','stable')
-       ORDER BY md.search_volume DESC NULLS LAST
+       ORDER BY p.id, md.search_volume DESC NULLS LAST
        LIMIT 20`
     );
     return reply.send(rows);

@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import {
-  LayoutDashboard, Package, TrendingUp, Truck, Calculator, Bookmark,
+  LayoutDashboard, Package, TrendingUp, Truck, Calculator, Bookmark, ShoppingBag,
 } from 'lucide-react';
 
 const navItems = [
@@ -13,6 +13,7 @@ const navItems = [
   { href: '/suppliers', label: 'Suppliers', icon: Truck },
   { href: '/margins', label: 'Margin Analyser', icon: Calculator },
   { href: '/watchlist', label: 'Watchlist', icon: Bookmark },
+  { href: '/settings', label: 'Shopify', icon: ShoppingBag },
 ];
 
 export function Sidebar() {
